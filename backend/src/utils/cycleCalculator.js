@@ -10,8 +10,10 @@ function calculateRestockCycle(visitsArray) {
         return 90; 
     }
 
+    // Mảng chỉ chứa tối đa 5 lần ghé thăm gần nhất cắt từ mảng gốc. Nếu mảng gốc có ít hơn 5 lần, sẽ lấy tất cả.
+    const recentVisits = visitsArray.slice(-5);
     // Sắp xếp mảng tăng dần theo thời gian (từ cũ đến mới) để đảm bảo tính toán đúng
-    const sortedVisits = visitsArray.map(date => new Date(date)).sort((a, b) => a - b);
+    const sortedVisits = recentVisits.map(date => new Date(date)).sort((a, b) => a - b);
 
     let totalDays = 0;
     const intervalsCount = sortedVisits.length - 1;

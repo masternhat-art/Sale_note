@@ -10,12 +10,8 @@ class StoreController {
 
     //[POST] /store/add
     add(req, res, next) {
-        const today = new Date();
-        const { name, phone, address, zone, succesfull_visits } = req.body;
-        if (succesfull_visits== null || succesfull_visits.length === 0|| succesfull_visits === undefined) {
-            succesfull_visits.push(today); // Nếu mảng rỗng, thêm ngày hiện tại vào mảng succesfull_visits
-        }
-        const store = new Store({ name, phone, address, zone, succesfull_visits });
+        const { name, phone, address, zone, last_visit, successful_visits } = req.body;
+        const store = new Store({ name, phone, address, zone, last_visit, successful_visits });
         store.save()
             .then(() => res.status(201).json(store))
             .catch(next);
@@ -23,7 +19,7 @@ class StoreController {
 
     //[Patch]/store/:phone/edit
     edit(req, res, next) {
-
+        
     }
 }
 

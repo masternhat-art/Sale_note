@@ -20,8 +20,17 @@ const storeSchema = new mongoose.Schema({
     },
     
     // MẢNG LƯU LỊCH SỬ (Tối đa 5 lần)
-    succesfull_visits: { type: [Date], default: [] }, 
+    successful_visits: { type: [Date], default: []},
     
+    last_visit: {
+        date: { type: Date, default: Date.now },
+        status: { type: Boolean, 
+            enum: [true, false], // Bắt buộc chỉ nhận 1 trong 2 giá trị này
+            required: true 
+        },
+        note: String // (Tùy chọn) Ghi chú: ví dụ "Chủ đi vắng", "Hết tiền mặt"
+    },
+ 
     // Chu kỳ nhập hàng (số ngày) - Sẽ được tính lại tự động mỗi khi mảng visits thay đổi
     restock_cycle: { type: Number, default: 60, min: 1, max: 365 },
     // Ngày dự kiến ghé thăm. 
@@ -34,16 +43,18 @@ const storeSchema = new mongoose.Schema({
 
 // Tự động tính toán chu kỳ nhập hàng dựa trên lịch sử ghé thăm.
 storeSchema.pre('save', function() {    
-    this.restock_cycle = calculateRestockCycle(this.succesfull_visits);
+    this.restock_cycle = calculateRestockCycle(this.successful_visits);
 });
 
 //Tự động cập nhật next_suggested_visit dựa trên thời gian ghé thăm gần nhất và chu kỳ nhập hàng.
 storeSchema.pre('save', function() {
-    if (this.succesfull_visits.length > 0) {
-        const lastVisit = this.succesfull_visits[this.succesfull_visits.length - 1];
-        this.next_suggested_visit = new Date(lastVisit.getTime() + this.restock_cycle * 24 * 60 * 60 * 1000);
-    } else {
-        this.next_suggested_visit = null;
+    if(this.last_visit.status==true){
+        this.successful_visits.push(this.last_visit.date);// Nếu thành công, cho nó vào mảng để tính chu kỳ nhập hàng
+        this.next_suggested_visit = new Date(this.last_visit.date.getTime() + this.restock_cycle * 24 * 60 * 60 * 1000);
+    }
+    // Nếu lần ghé thăm gần nhất không thành công, đặt next_suggested_visit là 30 ngày sau lần ghé thăm đó.
+    else{
+        this.next_suggested_visit = new Date(this.last_visit.date.getTime() + 30 * 24 * 60 * 60 * 1000);
     }
 });
 
