@@ -1,16 +1,21 @@
 const Store = require('../models/store');
 
 async function getDailyRoute() {
-
-    
+    // Lấy các cửa hàng có lịch hẹn trong khoảng 10 ngày trước đến 10 ngày sau hôm nay.
     const today = new Date();
-    const sevenDayAgo = new Date(today);
-    sevenDayAgo.setDate(today.getDate() - 7);
+    today.setHours(0, 0, 0, 0);
+    const visitWindowStart = new Date(today);
+    visitWindowStart.setDate(visitWindowStart.getDate() - 10);
+    const visitWindowEnd = new Date(today);
+    visitWindowEnd.setDate(visitWindowEnd.getDate() + 11);
     const routes = await Store.aggregate([
-            // Bước 1 ($match): Lọc ra những cửa hàng ĐÃ ĐẾN HẠN hoặc QUÁ HẠN
+            // Bước 1 ($match): Lọc lịch hẹn nằm trong khoảng ±10 ngày quanh hôm nay.
             {
                 $match: {
-                    next_suggested_visit: { $lte: today }
+                    next_suggested_visit: {
+                        $gte: visitWindowStart,
+                        $lt: visitWindowEnd
+                    }
                 }
             },
             
@@ -26,7 +31,7 @@ async function getDailyRoute() {
                             name: "$name",
                             phone:"$phone",
                             address: "$address",
-                            overdue_date: "$next_suggested_visit"
+                            suggested_visit: "$next_suggested_visit"
                         }
                     }
                 }
@@ -41,5 +46,19 @@ async function getDailyRoute() {
     return routes;
 }
 
-module.exports = getDailyRoute;
+class routeController {
+    async getWay(req, res, next) {
 
+        try {
+            const data = await getDailyRoute();
+            res.status(200).json({
+                data,
+                message: 'Lấy danh sách cửa hàng cần ghé thăm trong ngày thành công!'
+            });
+        } catch (error) {
+            next(error);
+        }
+    }    
+}
+
+module.exports = new routeController();

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 const { calculateRestockCycle } = require('../utils/cycleCalculator');
 
 const VALID_ZONES = [
@@ -10,7 +11,8 @@ const VALID_ZONES = [
 
 const storeSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true, maxlength: 120 },
-    phone: { type: String, trim: true, maxlength: 20 },
+    slug: { type: String, unique: true },
+    phone: { type: [String], trim: true, maxlength: 20 },
     address: { type: String, trim: true, maxlength: 300 },
     zone: {
         type: String,
@@ -35,10 +37,24 @@ const storeSchema = new mongoose.Schema({
     restock_cycle: { type: Number, default: 60, min: 1, max: 365 },
     // Ngày dự kiến ghé thăm. 
     next_suggested_visit: Date 
+    
 
 }, {
     timestamps: true,
     optimisticConcurrency: true
+});
+
+// Middleware: Tự động tạo slug từ 'name' trước khi lưu vào database
+storeSchema.pre('save', function() {
+    // Chỉ tạo lại slug nếu trường name bị thay đổi hoặc là tạo mới
+    if (this.isModified('name')) {
+        this.slug = slugify(this.name, { 
+            lower: true,      // Chuyển thành chữ thường
+            strict: true,     // Xóa các ký tự đặc biệt (!, @, #,...)
+            locale: 'vi'      // Hỗ trợ tiếng Việt
+        });
+    }
+    ;
 });
 
 // Tự động tính toán chu kỳ nhập hàng dựa trên lịch sử ghé thăm.
